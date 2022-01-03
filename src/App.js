@@ -1,23 +1,63 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+
+import InfiniteScroll from 'react-infinite-scroll-component';
+
+import axios from "axios";
 
 function App() {
+  const [ items, setItems ] = useState();
+  const [ limitStart, setLimitStart ] = useState(20);
+  const [ hasMore, setHasMore ] = useState(true);
+
+
+  useEffect(() => {
+    axios.get(`https://jsonplaceholder.typicode.com/posts?_limit=20`).then(response => {
+      setItems(response.data);
+    }).catch(error => {
+      console.log(error);
+    }) 
+  }, [])
+
+  const getData = () => {
+    axios.get(`https://jsonplaceholder.typicode.com/posts?_start=${limitStart}&_limit=20`).then(response => {
+      console.log("Server response: ", response.data);
+      if (response.data.length === 0) {
+        setHasMore(false);
+      } else {
+        setItems([...items, ...response.data]);
+      }
+    }).catch(error => {
+      console.log(error);
+    })
+  }
+
+  const fetchData = () => {
+    getData();
+    setLimitStart(prevLimit => prevLimit + 20);
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {
+        items ? (
+          <InfiniteScroll
+            dataLength={items.length}
+            next={fetchData}
+            hasMore={hasMore}
+            loader={<h4>Loading...</h4>}
+          >
+            {
+              items.map(item => (
+                <div key={item.id}>
+                  <span>{item.id}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </div>
+              ))
+            }
+          </InfiniteScroll>
+        ) : null
+      }
     </div>
   );
 }
